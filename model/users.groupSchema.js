@@ -16,6 +16,14 @@ const groupSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
+      totalMeal:{
+        type:Number,
+        default:0
+      },
+      mealRate:{
+           type:Number,
+           default:0
+      },
       CreatedOn:{
         type:Date,
         default:Date.now()

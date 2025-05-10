@@ -20,6 +20,14 @@ const groupUsersSchema = new mongoose.Schema({
         type:Number,
         default:0
     },
+    numberofMeal:{
+        type:Number,
+        default:0
+    },
+    totalConsumed:{
+        type:Number,
+        default:0
+    },
     CreatedOn:{
         type:Date,
         default:Date.now()
