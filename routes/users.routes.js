@@ -15,4 +15,7 @@ route.post('/data/updatedeposit', controller.update_deposit_control);
 route.post('/data/updatemeals',controller.update_meal_control);
 route.post('/data/updateaddcost',controller.add_cost_control);
 route.post('/data/cleardue',controller.clear_due_control);
+route.post('/data/addlist',controller.add_list_items_control);
+route.post('/data/getlist',controller.fetch_group_lists_control);
+route.post('/group/calculate',controller.calculate_group_control);
 module.exports = route;

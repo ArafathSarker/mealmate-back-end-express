@@ -6,6 +6,7 @@ require('dotenv').config();
 const User = require('../model/users.signupSchema');
 const groupUsersSchema = require('../model/users.groupusersSchema');
 const groupSchema = require('../model/users.groupSchema');
+const groupListSchema = require('../model/users.grouplist');
 //custrom functions 
 const updateDeposit = require('../customfunction/updateDepositFunction');
 const updateMeals = require('../customfunction/updateMealsFunction');
@@ -16,6 +17,12 @@ const users_signup_control= async (req,res) =>{
         if(user){
           return  res.status(404).send({
                 message:"User already registered",
+                status:400
+            });
+        }
+        else if(req.body.password.length < 6){
+            return res.status(400).send({
+                message:"Password must be at least 6 characters",
                 status:400
             });
         }
@@ -46,8 +53,8 @@ const users_login_control = async (req,res)=>{
         const user = await User.findOne({username:req.body.username});
         if(!user){
             return  res.status(400).json({
-                message:"User already registered",
-                status:401
+                message:"User not registered",
+                status:400
             })
         }
         else if(!bcrypt.compareSync(req.body.password,user.password)){
@@ -94,10 +101,11 @@ const users_dashboard_control = (req,res) =>{
 }
 //Dashboard group controller 
 const users_group_control = async (req,res)=>{
+        
+     try{
         const Group = await groupSchema.findOne({
             groupname:req.body.groupname
         });
-     try{
             if(Group)
             {
                 return res.status(400).json({
@@ -156,7 +164,7 @@ const addUser_group_control = async (req,res)=>{
         else if(isRegistered.includes(null))
         {
             res.status(400).send({
-                message:"User is not registered in this website",
+                message:"User not registered in this website",
                 success:false
             });
         }
@@ -185,7 +193,8 @@ const addUser_group_control = async (req,res)=>{
     catch(err)
     {
         res.status(500).json({
-           message:`Sorry server error:${err} `
+           message:`Sorry server error`,
+              success:false
         });
     }
 };
@@ -290,6 +299,7 @@ try{
   });
 }
 }
+//Updating the deposit amount
 const update_deposit_control = async (req, res) => {
     const { userId, groupId, depositAmount } = req.body;
 
@@ -297,9 +307,10 @@ const update_deposit_control = async (req, res) => {
         const result = await updateDeposit(userId, groupId, depositAmount);
         res.status(200).json(result);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: "Sorry! server error" });
     }
 }
+//Updating the meal count
 const update_meal_control =  async (req, res) => {
     const { userId, groupId, mealCount } = req.body;
 
@@ -307,9 +318,10 @@ const update_meal_control =  async (req, res) => {
         const result = await updateMeals(userId, groupId, mealCount);
         res.status(200).json(result);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message:"Sorry! server error" });
     }
 }
+//Adding the cost in the group
 const add_cost_control = async (req, res) => {
     const { groupId, cost } = req.body;
 
@@ -325,7 +337,7 @@ const add_cost_control = async (req, res) => {
 
         res.status(200).json({ message: 'Cost added successfully', group });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message:"Sorry! server error" });
     }
 }
 //Clearing the dues
@@ -334,7 +346,7 @@ const clear_due_control = async (req, res) => {
 
     if (!name || !username) {
         return res.status(400).json({
-            message: "Both 'name' and 'username' are required",
+            message: "'username' required",
             success: false,
         });
     }
@@ -383,9 +395,112 @@ const clear_due_control = async (req, res) => {
         });
     } catch (err) {
         console.error("Error in clear_due_control:", err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: "Server error", success: false });
     }
 };
+
+//Adding the list items in the group
+const add_list_items_control = async (req, res) => {
+  const {group,item1,item2,item3,item4,item5,item6,item7
+    ,item8,item9,item10} = req.body;
+    try {
+        const groupData = await groupSchema.findOne({ _id: group });
+        if (!groupData) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+        const data = await groupListSchema.create({
+            group,item1,item2,item3,item4,item5,item6,item7,item8,item9,item10
+        });
+        
+        await groupSchema.findByIdAndUpdate(
+                    group,
+                    { $inc: { totalCost: data.totalPrice} }, 
+                    { new: true } 
+                );
+        return  res.status(200).json({ message: 'List items added successfully' });
+    } 
+    catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+//fetching the list items
+const fetch_group_lists_control = async (req, res) => {
+    const { groupId } = req.body;
+
+    try {
+        const groupLists = await groupListSchema.find({ group: groupId }).sort({ CreatedOn: -1 });
+        if (!groupLists || groupLists.length === 0) {
+            return res.status(404).json({ message: 'No lists found for this group', success: false });
+        }
+
+        return res.status(200).json({ message: 'Group lists fetched successfully', success: true, data:groupLists });
+    } catch (err) {
+        console.error("Error in fetch_group_lists_control:", err);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+};
+//Calculating the group logic
+const calculate_group_control = async (req, res) => {
+    const { name } = req.body;
+
+    try {
+        const groupUser = await groupUsersSchema.findOne({ name });
+        if (!groupUser) {
+            return res.status(404).json({ message: 'User not found in the database' });
+        }
+        const groupId = groupUser.group;
+        const group = await groupSchema.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+        //The calculation logic
+       for (const memberId of group.members) {
+    const groupUser = await groupUsersSchema.findById(memberId);
+    let mealRate = group.totalCost / group.totalMeal;
+        let totalConsumed = groupUser.numberofMeal * mealRate;
+        let due=0,refund=0;
+        if (totalConsumed > groupUser.deposit) {
+            due = totalConsumed - groupUser.deposit;
+            refund = 0;
+        } else if (totalConsumed < groupUser.deposit) {
+            refund = groupUser.deposit - totalConsumed;
+            due = 0;
+        } else {
+            refund = 0;
+            due = 0;
+        }
+        await groupUsersSchema.findByIdAndUpdate(memberId, {
+            $set: {
+            
+                totalConsumed,
+                numberofMeal:0,
+                deposit:0,
+            },
+             $inc: { 
+                due,
+                refund,
+
+            },
+                   
+        }, { new: true });
+        await groupSchema.findByIdAndUpdate(groupId, {
+            $set: {
+            
+                totalCost:0,
+                totalDeposit:0,
+                totalMeal:0,
+                mealRate,
+            }
+                   
+        });
+       
+}
+       
+        return res.status(200).json({ message: 'Calculation successfull', success: true });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+}
 module.exports = {
     users_signup_control,
     users_login_control,
@@ -399,4 +514,7 @@ module.exports = {
     update_meal_control,
     add_cost_control,
     clear_due_control,
+    add_list_items_control,
+    fetch_group_lists_control,
+    calculate_group_control,
 }
