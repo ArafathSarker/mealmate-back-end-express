@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-const port = process.env.PORT || 4000;
+const dev = require('./config');
+const port = dev.app.port;
 const hostName = "127.0.0.1";
 app.listen(port,hostName,(err)=>{
     if(err) console.log(`Sorry erro:${err}`);
