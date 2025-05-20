@@ -6,6 +6,7 @@ const groupListSchema = new mongoose.Schema({
         ref: 'Group',
         required: true
     },
+    name:String,
     item1: {
         type: Object,
     },

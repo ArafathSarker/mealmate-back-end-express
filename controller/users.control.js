@@ -401,7 +401,7 @@ const clear_due_control = async (req, res) => {
 
 //Adding the list items in the group
 const add_list_items_control = async (req, res) => {
-  const {group,item1,item2,item3,item4,item5,item6,item7
+  const {group,name,item1,item2,item3,item4,item5,item6,item7
     ,item8,item9,item10} = req.body;
     try {
         const groupData = await groupSchema.findOne({ _id: group });
@@ -409,7 +409,7 @@ const add_list_items_control = async (req, res) => {
             return res.status(404).json({ message: 'Group not found' });
         }
         const data = await groupListSchema.create({
-            group,item1,item2,item3,item4,item5,item6,item7,item8,item9,item10
+            group,name,item1,item2,item3,item4,item5,item6,item7,item8,item9,item10
         });
         
         await groupSchema.findByIdAndUpdate(
