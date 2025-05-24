@@ -18,4 +18,7 @@ route.post('/data/cleardue',controller.clear_due_control);
 route.post('/data/addlist',controller.add_list_items_control);
 route.post('/data/getlist',controller.fetch_group_lists_control);
 route.post('/group/calculate',controller.calculate_group_control);
+route.post('/group/leave',controller.leave_group_control);
+route.post('/group/changename',controller.change_group_name_control);
+route.post('/data/fetchuser',controller.fetch_users_dashbord_data_control);
 module.exports = route;

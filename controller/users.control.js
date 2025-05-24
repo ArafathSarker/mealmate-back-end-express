@@ -498,7 +498,89 @@ const calculate_group_control = async (req, res) => {
        
         return res.status(200).json({ message: 'Calculation successfull', success: true });
     } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
+    }
+}
+//function to leave the group
+const leave_group_control = async (req, res) => {
+    const { name } = req.body;   
+    try {
+        const groupUser = await groupUsersSchema.findOne({ name });
+        if (!groupUser) {
+            return res.status(404).json({ message: 'User not found in the database' });
+        }
+        const groupId = groupUser.group;
+        const group = await groupSchema.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+       await groupUsersSchema.deleteOne({ name });
+       await groupSchema.updateOne(
+    { _id: groupId },
+    { $pull: { members: groupUser._id } }
+     );
+
+      const updatedGroup = await groupSchema.findById(groupId);
+      if (updatedGroup && Array.isArray(updatedGroup.members) && updatedGroup.members.length === 0) {
+    await groupSchema.deleteOne({ _id: groupId });
+       }
+        return res.status(200).json({ message: 'Left the group successfully', success: true });
+       
+    }
+    catch (err) {
+       return  res.status(500).json({ message: 'Server error' });
+    }
+}
+//Renaming the group
+const change_group_name_control = async (req, res) => {
+    const { groupId, newGroupName } = req.body;
+    try {
+        // Find the current group
+        const currentGroup = await groupSchema.findById(groupId);
+        if (!currentGroup) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        // Check if the new name is the same as the current name
+        if (currentGroup.groupname === newGroupName) {
+            return res.status(400).json({ message: 'New group name must be different from the current name', success: false });
+        }
+
+        // Check if the new group name already exists in another group
+        const groupExists = await groupSchema.findOne({ groupname: newGroupName });
+        if (groupExists) {
+            return res.status(409).json({ message: 'Group name already exists', success: false });
+        }
+
+        // Update the group name
+        const group = await groupSchema.findByIdAndUpdate(
+            groupId,
+            { groupname: newGroupName },
+            { new: true }
+        );
+
+        return res.status(200).json({ message: 'Group renamed successfully', success: true });
+    } catch (err) {
+        return res.status(500).json({ message: 'Server error' });
+    }
+}
+//Fetching the users dashboard data
+const fetch_users_dashbord_data_control = async (req, res) => {
+    const { groupId } = req.body;
+    try {
+        const groupUser = await groupUsersSchema.find({group:groupId});
+        if (!groupUser || groupUser.length === 0) {
+            return res.status(404).json({ message: 'No users found in this group', success: false });
+        }
+        return res.status(200).json({
+            message: 'Users fetched successfully',
+            success: true,
+            data: groupUser
+        });
+        
+    } catch (err) {
+        console.error("Error in fetch_users_dashbord_data_control:", err);
+        res.status(500).json({ message: 'Server error', success: false });
     }
 }
 module.exports = {
@@ -517,4 +599,7 @@ module.exports = {
     add_list_items_control,
     fetch_group_lists_control,
     calculate_group_control,
+    leave_group_control,
+    change_group_name_control,
+    fetch_users_dashbord_data_control,
 }
