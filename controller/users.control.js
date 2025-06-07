@@ -583,6 +583,33 @@ const fetch_users_dashbord_data_control = async (req, res) => {
         res.status(500).json({ message: 'Server error', success: false });
     }
 }
+//resetting the whole group
+const reset_group_control = async (req, res) => {
+    const { groupId } = req.body;
+    try {
+        const isexist = await groupSchema.findById(groupId);
+        // Reset group fields
+        if(isexist){
+        await groupSchema.findByIdAndUpdate(
+            groupId,
+            { $set: { totalCost: 0, totalDeposit: 0, totalMeal: 0, mealRate: 0 } },
+            { new: true }
+        );
+        
+        // Reset all group users' fields
+        await groupUsersSchema.updateMany(
+            { group: groupId },
+            { $set: { deposit: 0, numberofMeal: 0, due: 0, refund: 0, totalConsumed: 0 } }
+        );
+        await groupListSchema.deleteMany({ group: groupId});
+        return res.status(200).json({ message: "Group and group users reset successfully", success: true });
+    }
+    else return res.status(400).send({message:"Sorry! Bad request",success:false});
+    } catch (err) {
+        console.error("Error in reset_group_control:", err);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+}
 module.exports = {
     users_signup_control,
     users_login_control,
@@ -602,4 +629,5 @@ module.exports = {
     leave_group_control,
     change_group_name_control,
     fetch_users_dashbord_data_control,
+    reset_group_control,
 }
